@@ -1,4 +1,4 @@
-from scipy.optimize import minimize, NonlinearConstraint, Bounds
+from scipy.optimize import minimize, NonlinearConstraint, LinearConstraint, Bounds
 import math
 import numpy as np
 import matplotlib.pyplot as plt
@@ -35,13 +35,8 @@ def calcPoints(x, i):
     p3 = requirements['positions'][i]
     p2 = findPoint(x[2], requirements['angles'][i] + math.pi, p3)
     p1a, p1b = get_intersections(0, 0, x[0], p2[0], p2[1], x[1])
-    
-    if (p1a[0] > p1b[0]):
-        p1 = p1b
-    else:
-        p1 = p1a
 
-    return p1, p2, p3
+    return p1a, p1b, p2, p3
 
 def get_intersections(x0, y0, r0, x1, y1, r1):
     # circle 1: (x0, y0), radius r0
@@ -102,29 +97,39 @@ def optimize_scenarios(x):
     x = np.abs(x)
 
     for i in range(len(requirements['positions'])):
-        p3 = requirements['positions'][i]
-        p2 = findPoint(x[2], requirements['angles'][i] + math.pi, p3)
-        p1a, p1b = get_intersections(0, 0, x[0], p2[0], p2[1], x[1])
-        
-        if (p1a[0] > p1b[0]):
-            p1 = p1b
-        else:
-            p1 = p1a
+        p1a, p1b, p2, p3 = calcPoints(x, i)
 
         # calculate mass and mass pos
-        m1, mp1 = findMass([0, 0], p1, 4)
+        m1a, mp1a = findMass([0, 0], p1a, 4)
 
-        m2, mp2 = findMass(p1, p2, 2)
+        m2a, mp2a = findMass(p1a, p2, 2)
+
+        m1b, mp1b = findMass([0, 0], p1b, 4)
+
+        m2b, mp2b = findMass(p1b, p2, 2)
 
         m3, mp3 = findMass(p2, p3, 1)
 
         m4, mp4 = 5, p3[0]
 
-        m = [m1, m2, m3, m4]
-        np.multiply(m, 9.81)
-        p = [mp1, mp2, mp3, mp4]
+        ma = [m1a, m2a, m3, m4]
+        np.multiply(ma, 9.81)
+        pa = [mp1a, mp2a, mp3, mp4]
 
-        torques[i] = abs(totalTorque(m, p))
+        mb = [m1b, m2b, m3, m4]
+        np.multiply(mb, 9.81)
+        pb = [mp1b, mp2b, mp3, mp4]
+
+        torques[i] = min(abs(totalTorque(ma, pa)), abs(totalTorque(mb, pb)))
+
+        if (abs(totalTorque(ma, pa)) < abs(totalTorque(mb, pb))):
+            p1 = p1a
+        else:
+            p1 = p1b
+
+        solutions[i][1] = p1
+        solutions[i][2] = p2
+        solutions[i][3] = p3
 
     return np.linalg.norm(torques)
 
@@ -134,7 +139,8 @@ def constrainMinLength(x):
 def constrainMaxDiff(x):
     return x[1]-x[0]
 
-conMaxDiff = NonlinearConstraint(constrainMaxDiff, lb=-0, ub=0, keep_feasible=True)
+#conMaxDiff = NonlinearConstraint(constrainMaxDiff, lb=-0, ub=0, keep_feasible=True)
+conMaxDiff = LinearConstraint([[1, -1, 0], [1, 1, 1]], [0, 1], [0, np.inf], keep_feasible=True)
 
 bounds = Bounds([0, 0, 0], [np.inf, np.inf, 0.3])
 
@@ -151,17 +157,10 @@ def main():
     plt.plot(x, y, 'bo', linestyle='--')
     plt.show()
 
-    x0=[1, 1, 0.2]
+    x0=[0.4, 0.4, 0.3]
 
-    res = minimize(optimize_scenarios, x0=lengths, method='trust-constr', constraints=conMaxDiff, bounds=bounds)
+    res = minimize(optimize_scenarios, x0=x0, method='trust-constr', constraints=conMaxDiff, bounds=bounds)
     print(res)
-
-    for i in range(len(requirements['positions'])):
-        p1, p2, p3 = calcPoints(res.x, i)
-
-        solutions[i][1] = p1
-        solutions[i][2] = p2
-        solutions[i][3] = p3
 
     x1 = [solutions[0][i][0] for i in range(len(requirements['positions']) + 1)]
     y1 = [solutions[0][i][1] for i in range(len(requirements['positions']) + 1)]
