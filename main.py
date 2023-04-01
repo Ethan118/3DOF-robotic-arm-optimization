@@ -85,16 +85,13 @@ def objective(x):
 
     m4, mp4 = 5, p3[0]
 
-    m = [m1, m2, m3, m4]
-    np.multiply(m, 9.81)
-    p = [mp1, mp2, mp3, mp4]
+    m = np.array([m1, m2, m3, m4]) * 9.81
+    p = np.array([mp1, mp2, mp3, mp4])
 
     return pow((totalTorque(m, p)), 2)
 
 def optimize_scenarios(x):
     torques = [0, 0, 0]
-
-    x = np.abs(x)
 
     for i in range(len(requirements['positions'])):
         p1a, p1b, p2, p3 = calcPoints(x, i)
@@ -112,13 +109,11 @@ def optimize_scenarios(x):
 
         m4, mp4 = 5, p3[0]
 
-        ma = [m1a, m2a, m3, m4]
-        np.multiply(ma, 9.81)
-        pa = [mp1a, mp2a, mp3, mp4]
+        ma = np.array([m1a, m2a, m3, m4]) * 9.81
+        pa = np.array([mp1a, mp2a, mp3, mp4])
 
-        mb = [m1b, m2b, m3, m4]
-        np.multiply(mb, 9.81)
-        pb = [mp1b, mp2b, mp3, mp4]
+        mb = np.array([m1b, m2b, m3, m4]) * 9.81
+        pb = np.array([mp1b, mp2b, mp3, mp4])
 
         torques[i] = min(abs(totalTorque(ma, pa)), abs(totalTorque(mb, pb)))
 
@@ -157,7 +152,7 @@ def main():
     plt.plot(x, y, 'bo', linestyle='--')
     plt.show()
 
-    x0=[0.4, 0.4, 0.3]
+    x0=lengths
 
     res = minimize(optimize_scenarios, x0=x0, method='trust-constr', constraints=conMaxDiff, bounds=bounds)
     print(res)
@@ -184,3 +179,4 @@ def main():
 
 
 main()
+#print(optimize_scenarios([0.9, 0.9, 0.3]))
