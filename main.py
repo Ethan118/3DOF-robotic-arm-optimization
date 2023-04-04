@@ -1,7 +1,8 @@
-from scipy.optimize import minimize, NonlinearConstraint, LinearConstraint, Bounds
+from scipy.optimize import minimize, NonlinearConstraint, LinearConstraint, Bounds, show_options
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits import mplot3d
 
 solutions = [
     [[0, 0], [0, 0], [0, 0], [0, 0]],
@@ -15,6 +16,18 @@ requirements = {
     "positions": [[0.75, 0.1], [0.5, 0.5], [0.2, 0.6]],
     "angles": [-math.pi/3, 0, math.pi/4]
 }
+
+def plot_function():
+    x0, x1, x2 = np.meshgrid(np.linspace(0, 1, 100), np.linspace(0, 1, 100), np.linspace(0, 1, 100))
+    z = optimize_scenarios(np.stack([x0, x1, x2]))
+
+    fig = plt.figure(figsize=(30, 20))
+
+    ax = fig.add_subplot(1, 3, 1, projection='3d')
+    ax.contour3D(x0, x1, x2, z, 70, cmap='plasma')
+    ax.set_xlabel('$x_{0}$')
+    ax.set_ylabel('$x_{1}$')
+    ax.set_zlabel('$f(x)$')
 
 def totalTorque(m, p):
     return np.dot(m, p)
@@ -126,35 +139,40 @@ def optimize_scenarios(x):
         solutions[i][2] = p2
         solutions[i][3] = p3
 
+    torques = np.array(torques)
+
     return np.linalg.norm(torques)
 
-def constrainMinLength(x):
-    return x[0]+x[1]-findLength([0, 0], findPoint(x[2], requirements['angles'][0] + math.pi, requirements['positions'][0]))
+# def constrainMinLength(x):
+#     return x[0]+x[1]-findLength([0, 0], findPoint(x[2], requirements['angles'][0] + math.pi, requirements['positions'][0]))
 
-def constrainMaxDiff(x):
-    return x[1]-x[0]
+# def constrainMaxDiff(x):
+#     return x[1]-x[0]
 
 #conMaxDiff = NonlinearConstraint(constrainMaxDiff, lb=-0, ub=0, keep_feasible=True)
-conMaxDiff = LinearConstraint([[1, -1, 0], [1, 1, 1]], [0, 1], [0, np.inf], keep_feasible=True)
-
-bounds = Bounds([0, 0, 0], [np.inf, np.inf, 0.3])
+conMaxDiff = LinearConstraint([[1, -1, 0], [1, 1, 1]], [-0.1, 1], [0.1, np.inf], keep_feasible=True)
+bounds = Bounds([0, 0, 0], [np.inf, np.inf, 0.25], keep_feasible=True)
 
 def main():
-    x0 = [-0.5, 0.5, 0.5]
+    # x0 = [-0.5, 0.5, 0.5]
 
-    res = minimize(objective, x0=x0, method='Nelder-Mead')
+    # res = minimize(objective, x0=x0, method='Nelder-Mead')
 
-    print(res)
+    # print(res)
 
-    x = [0, res.x[0], res.x[2], 0.75]
-    y = [0, res.x[1], 0.1-(0.75-res.x[2])*math.tan(-math.pi/3), 0.1]
+    # x = [0, res.x[0], res.x[2], 0.75]
+    # y = [0, res.x[1], 0.1-(0.75-res.x[2])*math.tan(-math.pi/3), 0.1]
 
-    plt.plot(x, y, 'bo', linestyle='--')
-    plt.show()
+    # plt.plot(x, y, 'bo', linestyle='--')
+    # plt.show()
 
-    x0=lengths
+    #plot_function()
 
-    res = minimize(optimize_scenarios, x0=x0, method='trust-constr', constraints=conMaxDiff, bounds=bounds)
+    x0=[0.5, 0.5, 0.1]
+
+    hess = lambda x: np.zeros((3, 3))
+
+    res = minimize(optimize_scenarios, x0=x0, method='trust-constr', constraints=conMaxDiff, bounds=bounds, options={'maxiter': 5000})
     print(res)
 
     x1 = [solutions[0][i][0] for i in range(len(requirements['positions']) + 1)]
@@ -168,6 +186,7 @@ def main():
 
     fig = plt.figure()
     axis = fig.add_subplot()
+    axis.set_aspect('equal', adjustable='box')
 
     axis.plot(x1, y1, 'bo', c='r', linestyle='--', label='scenario 1')
     axis.plot(x2, y2, 'bo', c='b', linestyle='--', label='scenario 2')
@@ -180,3 +199,4 @@ def main():
 
 main()
 #print(optimize_scenarios([0.9, 0.9, 0.3]))
+#show_options('minimize', 'trust-constr', True)
