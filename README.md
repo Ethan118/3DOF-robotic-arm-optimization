@@ -16,7 +16,7 @@ The table below presents the 3 configurations the robotic manipulator must past 
 | [0.5, 0.5] | 0&deg; |
 | [0.6, 0.2] | 45&deg; |
 
-
+ 
 Therefore, the objective is to determine the three lengths (l1, l2, l3), so that the base motor (located at the origin) requires the least possible torque in each scenario (T1, T2, T3) to maintain static equilibrium of the manipulator.
 
 ## Requirements
