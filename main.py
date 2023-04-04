@@ -3,7 +3,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
-
+ 
 solutions = [
     [[0, 0], [0, 0], [0, 0], [0, 0]],
     [[0, 0], [0, 0], [0, 0], [0, 0]],
